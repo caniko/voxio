@@ -1,20 +1,56 @@
 [tool.poetry]
 name = "voxio"
-version = "0.1.0"
-description = ""
+version = "0.1.2"
+description = "Library for ingesting and processing voxel (3D imaging) data"
 authors = ["caniko <canhtart@gmail.com>"]
+license = "BSD-4"
+repository = "https://github.com/caniko/voxio"
 readme = "README.md"
 
+keywords = ["3D", "voxel", "processing", "fix", "mesh"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Operating System :: OS Independent"
+]
+
+[tool.poetry.scripts]
+voxio = "voxio.cli:voxio_cli"
+
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.9,<3.11"
 pydantic = "^1.10.6"
 psutil = "^5.9.4"
 
-numpy = "^1.24.2"
+# Maintained by project author
+pydantic-numpy = ">=2.0"
+
+numpy = ">=1.17"
 scipy = "*"
 scikit-image = "^0.20.0"
 itk-morphologicalcontourinterpolation = "^1.1.0"
 opencv-python = "^4.7.0.72"
+imagesize = "^1.4.1"
+click = "^8.1.3"
+numba = "^0.56.4"
+yaspin = "^2.3.0"
+pillow = "^9.4.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.2"
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 120
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 120
 
 [build-system]
 requires = ["poetry-core"]

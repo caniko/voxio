@@ -2,22 +2,22 @@ import logging
 from collections import defaultdict
 from functools import cached_property
 from statistics import mean, stdev
-from typing import Optional, ClassVar
+from typing import ClassVar, Optional
 
 from pydantic import BaseModel, Field
 
-from voxio.scan import MAX_NUMBER_OF_UNITS_UINT8
 from voxio.utils.misc import number_of_planes_loadable_to_memory
 from voxio.utils.typings import TupleSlice
+from voxio.volume_info import MAX_NUMBER_OF_UNITS_UINT8
 
 logger = logging.getLogger(__file__)
 
 
-class BaseVolumeInfo(BaseModel):
-    plane_dimension: list[int, int]
+class VolumeInfo(BaseModel):
+    plane_dimension: tuple[int, int]
     unit_id_to_size_stack_sequence: list[dict[int, int], ...]
-    unit_pair_to_min_distance: dict[frozenset[int], float]
-    unit_id_to_yx_slices: dict[int, list[TupleSlice, TupleSlice]]
+    unit_pair_to_min_distance: dict[frozenset[int], float] = Field(default_factory=dict)
+    unit_id_to_yx_slices: dict[int, list[slice, slice]] = Field(default_factory=dict)
 
     # We use this default_factory when serializing from YAML, empty sets confuse Pydantic
     unit_ids_on_stack_edge: set[int] = Field(default_factory=set)
@@ -25,7 +25,6 @@ class BaseVolumeInfo(BaseModel):
     minimum_z_depth: ClassVar[int] = 4
 
     class Config:
-        arbitrary_types_allowed = True
         keep_untouched = (cached_property,)
 
     def unit_ids_in_z_range(
@@ -41,6 +40,10 @@ class BaseVolumeInfo(BaseModel):
         Returns units that are either entirely in the z range, and units that are partially in it.
         The 3rd value returned states if the z-range is uint8 compatible
         """
+        if self.unit_pair_to_min_distance is None:
+            msg = "Unit pair distance must be computed to find unit IDs in range"
+            raise AttributeError(msg)
+
         range_set = {i for i in range(start, stop + 1)}
         uint8_compatible = True
         whole, partially = set(), set()
@@ -80,7 +83,11 @@ class BaseVolumeInfo(BaseModel):
                 partial_id_to_min_dist_whole[partial_unit_id] = current_shortest_distance
 
             partial_id_to_min_dist_whole = dict(
-                sorted(partial_id_to_min_dist_whole.items(), key=lambda kv: kv[1], reverse=True)
+                sorted(
+                    partial_id_to_min_dist_whole.items(),
+                    key=lambda kv: kv[1],
+                    reverse=True,
+                )
             )
 
             for partial_id, distance in partial_id_to_min_dist_whole.items():
@@ -168,7 +175,8 @@ class BaseVolumeInfo(BaseModel):
 
     @cached_property
     def unit_ids_to_isolate(self) -> set[int]:
-        return self.all_unit_ids.difference(self.unit_ids_with_less_than_minimum_z_depth)
+        result = self.all_unit_ids.difference(self.unit_ids_with_less_than_minimum_z_depth)
+        return result.difference(self.unit_pair_to_min_distance) if self.unit_pair_to_min_distance else result
 
     @cached_property
     def full_scan_grouping_maximum_z_distance_for_merge(self) -> int:

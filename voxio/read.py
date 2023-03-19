@@ -1,18 +1,18 @@
 from concurrent.futures import ThreadPoolExecutor
 from logging import getLogger
-from math import ceil, floor
 from pathlib import Path
-from typing import Optional, Iterable, Callable, Sequence, Generator
+from typing import Callable, Generator, Iterable, Sequence
 
-import cv2
 import numpy as np
-from pydantic import FilePath
-from skimage.io import imread as ski_imread
+from pydantic import DirectoryPath, FilePath, validate_arguments
+
+from voxio.utils.io import cv2_read_any_depth
+from voxio.utils.misc import break_into_chunks, get_number_indexed_image_paths
 
 logger = getLogger(__name__)
 
 
-def simple_read_stack_images(
+def read_stack_images(
     image_paths: Sequence[FilePath],
     image_reader: Callable[[Path | str], np.ndarray],
     parallel: bool = True,
@@ -24,30 +24,27 @@ def simple_read_stack_images(
     )
 
 
+def simple_read_images(image_paths: Sequence[FilePath], parallel: bool = True) -> np.ndarray:
+    return read_stack_images(image_paths, cv2_read_any_depth, parallel)
+
+
+@validate_arguments
+def simple_find_read_images(image_directory: DirectoryPath, *finder_args, parallel: bool = True) -> np.ndarray:
+    return read_stack_images(
+        get_number_indexed_image_paths(image_directory, *finder_args), cv2_read_any_depth, parallel
+    )
+
+
 def chunk_read_stack_images(
     image_paths: Sequence[FilePath],
-    image_reader: Callable[[Path | str], np.ndarray],
     chunk_size: int,
+    image_reader: Callable[[Path | str], np.ndarray],
+    offset: int = 0,
     parallel: bool = True,
 ) -> Generator[np.ndarray, None, None]:
-    """
-
-    :param image_paths:
-    :param image_reader:
-    :param chunk_size:
-    :param parallel:
-    :return:
-    """
-    number_of_mid_chunks_minus_1 = floor(len(image_paths) / chunk_size)
-    chunks = [image_paths[:chunk_size]]
-    for chunk_idx in range(1, number_of_mid_chunks_minus_1):
-        preceding = chunk_idx * chunk_size
-        proceeding = preceding + chunk_size
-        chunks.append(image_paths[preceding:proceeding])
-    else:  # after end
-        chunks.append(image_paths[proceeding:])
-
-    for image_paths_chunk in chunks:
+    for idx, image_paths_chunk in enumerate(break_into_chunks(image_paths, chunk_size)):
+        if idx < offset:
+            continue
         yield (
             parallel_read_stack_images(image_paths_chunk, image_reader)
             if parallel
