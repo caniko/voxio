@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "voxio"
+version = "0.1.0"
+description = ""
+authors = ["caniko <canhtart@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+pydantic = "^1.10.6"
+psutil = "^5.9.4"
+
+numpy = "^1.24.2"
+scipy = "*"
+scikit-image = "^0.20.0"
+itk-morphologicalcontourinterpolation = "^1.1.0"
+opencv-python = "^4.7.0.72"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
