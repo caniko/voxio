@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from logging import getLogger
 from pathlib import Path
 from typing import Callable, Generator, Iterable, Sequence
@@ -8,13 +9,14 @@ from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from voxio.utils.io import cv2_read_any_depth
 from voxio.utils.misc import break_into_chunks, get_number_indexed_image_paths
+from voxio.utils.typings import FilePathLike
 
 logger = getLogger(__name__)
 
 
 def read_stack_images(
     image_paths: Sequence[FilePath],
-    image_reader: Callable[[Path | str], np.ndarray],
+    image_reader: Callable[[FilePathLike], np.ndarray],
     parallel: bool = True,
 ) -> np.ndarray:
     return (
@@ -38,17 +40,19 @@ def simple_find_read_images(image_directory: DirectoryPath, *finder_args, parall
 def chunk_read_stack_images(
     image_paths: Sequence[FilePath],
     chunk_size: int,
-    image_reader: Callable[[Path | str], np.ndarray],
+    image_reader: Callable[[FilePathLike], np.ndarray | None] | Callable[[int, FilePathLike], np.ndarray | None],
     offset: int = 0,
+    with_chunk_idx: bool = False,
     parallel: bool = True,
 ) -> Generator[np.ndarray, None, None]:
     for idx, image_paths_chunk in enumerate(break_into_chunks(image_paths, chunk_size)):
         if idx < offset:
             continue
+        prepared_reader = partial(image_reader, idx) if with_chunk_idx else image_reader
         yield (
-            parallel_read_stack_images(image_paths_chunk, image_reader)
+            parallel_read_stack_images(image_paths_chunk, prepared_reader)
             if parallel
-            else np.array([image_reader(img_path) for img_path in image_paths_chunk])
+            else np.array([prepared_reader(img_path) for img_path in image_paths_chunk])
         )
 
 

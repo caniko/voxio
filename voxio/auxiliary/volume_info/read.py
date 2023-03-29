@@ -15,7 +15,7 @@ from scipy.ndimage import find_objects
 from voxio.read import cv2_read_any_depth, parallel_scan_stack_images
 from voxio.utils.distance import image_feature_distance
 from voxio.utils.misc import sort_indexed_dict_keys_to_value_list
-from voxio.volume_info.volume_info import VolumeInfo
+from voxio.auxiliary.volume_info.volume_info import VolumeInfo
 
 IndexAndImage = tuple[int, NDArray]
 

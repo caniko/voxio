@@ -2,11 +2,11 @@ from pydantic import BaseModel, DirectoryPath, FilePath
 
 
 class CachingInfo(BaseModel):
-    data_directory: DirectoryPath
+    working_directory: DirectoryPath
 
     @property
     def cache_directory(self) -> DirectoryPath:
-        result = self.data_directory / "cache"
+        result = self.working_directory / "cache"
         result.mkdir(exist_ok=True)
         return result
 

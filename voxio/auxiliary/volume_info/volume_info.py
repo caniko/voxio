@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from voxio.utils.misc import number_of_planes_loadable_to_memory
 from voxio.utils.typings import TupleSlice
-from voxio.volume_info import MAX_NUMBER_OF_UNITS_UINT8
+from voxio.auxiliary.volume_info import MAX_NUMBER_OF_UNITS_UINT8
 
 logger = logging.getLogger(__file__)
 

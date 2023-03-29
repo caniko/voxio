@@ -12,7 +12,7 @@ from pydantic_numpy import NDArray
 from scipy import ndimage
 from yaspin import yaspin
 
-from voxio.caching import CachingInfo
+from voxio.auxiliary.caching import CachingInfo
 from voxio.read import chunk_read_stack_images
 from voxio.utils.io import cv2_read_any_depth, write_indexed_images_to_directory
 from voxio.utils.misc import get_image_dimensions, number_of_planes_loadable_to_memory
@@ -23,7 +23,7 @@ defaultdict_set = partial(defaultdict, set)
 class StateOfLabel(BaseModel):
     chunk_size: int
     volume_index: int | None
-    bad_object_locations: list[tuple[int, int, int]] = Field(default_factory=list)
+    bad_object_locations: list[NDArray, ...] = Field(default_factory=list)
 
     chunk_depths: list[int, ...] = Field(default_factory=list)
     object_id_to_locs: dict[int, set[int]] = Field(default_factory=defaultdict_set)
@@ -111,7 +111,7 @@ def main_label_binary_image(
         compress_pickle.dump(state, caching_info.state_path)
 
     output_directory = Path(output_directory)
-    caching_info = CachingInfo(data_directory=output_directory)
+    caching_info = CachingInfo(working_directory=output_directory)
 
     queue = deque([np.load(caching_info.array_file_paths[-1])["v"]]) if caching_info.array_file_paths else deque()
 
@@ -122,7 +122,7 @@ def main_label_binary_image(
             upcoming, bad_objects = remove_objects_that_contain_other_objects_from_labeled(upcoming)
             upcoming = upcoming.astype(np_data_type)
             if np.any(bad_objects):
-                state.bad_object_locations.extend(np.add(bad_objects, [state.current_chunk_depth(volume_index), 0, 0]))
+                state.bad_object_locations.append(np.add(bad_objects, [state.current_chunk_depth(volume_index), 0, 0]))
 
         queue.append(upcoming)
         state.chunk_depths.append(len(upcoming))
@@ -235,11 +235,14 @@ def main_label_binary_image(
             output_directory,
         )
 
+    bol = [bad_object_location.tolist() for bad_object_location in state.bad_object_locations]
+
     with open(output_directory / "info.json", "w") as out_json:
         json.dump(
             {
-                "bad_object_locations": state.bad_object_locations,
-                "total_objects": len(state.object_id_to_locs),
+                "bad_object_locations": bol,
+                "bad_objects": len(bol),
+                "good_objects": len(state.object_id_to_locs),
             },
             out_json,
         )

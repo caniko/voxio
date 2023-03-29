@@ -8,6 +8,11 @@ import psutil
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
 
+def get_image_index_range(index: int, number_of_chunks: int) -> range:
+    start = index * number_of_chunks
+    return range(start, start + number_of_chunks)
+
+
 @validate_arguments
 def get_image_paths(image_directory: DirectoryPath, image_format: str, sorting_key: Callable) -> tuple[FilePath, ...]:
     assert image_directory.is_dir()
