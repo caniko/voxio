@@ -1,6 +1,7 @@
-from collections import deque
+from collections import deque, defaultdict
 from logging import getLogger
 
+import compress_pickle
 import imagesize
 import numpy as np
 from numba import njit
@@ -12,8 +13,12 @@ from scipy.ndimage import find_objects
 from voxio.auxiliary.caching import CachingInfo
 from voxio.auxiliary.chunk_info import ChunkInfo
 from voxio.read import chunk_read_stack_images
-from voxio.utils.io import cv2_read_any_depth
-from voxio.utils.misc import number_of_planes_loadable_to_memory, sort_indexed_dict_keys_to_value_list
+from voxio.utils.io import cv2_read_any_depth, write_indexed_images_to_directory
+from voxio.utils.misc import (
+    number_of_planes_loadable_to_memory,
+    sort_indexed_dict_keys_to_value_list,
+    get_image_index_range,
+)
 
 logger = getLogger(__name__)
 
@@ -24,34 +29,40 @@ with respect to z (the chunk normal vector).
 """
 
 
-def _read_and_purge_small_artifacts(npy_path: FilePath, label_to_keep: int) -> np.ndarray[bool, bool]:
-    array = np.load(str(npy_path))
-
-
 @validate_arguments
 def clear_everything_but_largest_object(image_paths: tuple[FilePath, ...], output_directory: DirectoryPath) -> None:
     def _read_and_size_to_slice(idx: int, image_path: FilePath):
-        labeled, num_features = ndimage.label(cv2_read_any_depth(image_path))
-        chunk = ChunkInfo(
-            chunk_index=idx,
-            labeled=labeled,
-            label_to_slice={label: slices for label, slices in zip(range(1, num_features + 1), find_objects(labeled))},
-        )
-        max_volume_to_chunk_idx[chunk.max_volume] = chunk.max_volume
-        chunk.dump(caching.cache_directory, str(idx), pickle=True)
+        chunk = ChunkInfo(cv2_read_any_depth(image_path), idx, caching.cache_directory)
+        max_volume_to_chunk_idx[chunk.max_volume] = idx
+        chunk_idx_to_chunk[idx] = chunk
 
     caching = CachingInfo(working_directory=output_directory)
 
+    chunk_idx_to_chunk = {}
     max_volume_to_chunk_idx = {}
     chunk_size = number_of_planes_loadable_to_memory(
         imagesize.get(image_paths[0]),
-        memory_tolerance=0.5,
+        memory_tolerance=0.45,
         byte_mul=2,
     )
-
     deque(chunk_read_stack_images(image_paths, chunk_size, _read_and_size_to_slice), maxlen=0)
 
-    number_of_chunks
+    chunk_sequence = sort_indexed_dict_keys_to_value_list(chunk_idx_to_chunk)
+    number_of_chunks = len(chunk_sequence)
 
     max_volume_chunk_idx = max_volume_to_chunk_idx[max(max_volume_to_chunk_idx)]
-    start_chunk = ChunkInfo.load(caching.cache_directory, max_volume_chunk_idx)
+    start_chunk = chunk_sequence[max_volume_chunk_idx]
+
+    start_slice = start_chunk.label_to_slice[start_chunk.largest_label]
+    chunk_idx_to_target_labels: dict[int, list[int, ...]] = defaultdict(list)
+    chunk_idx_to_slices: dict[int, tuple[slice, slice, slice]] = {}
+
+    # From start to end
+    previous_chunk = start_chunk
+    previous_top = start_slice[1:]
+    for chunk in chunk_sequence[max_volume_chunk_idx + 1:]:
+        target_labels = []
+        for label, object_slice in chunk.label_to_slice.items():
+            if 
+
+    write_indexed_images_to_directory(start_chunk.read_labeled == start_chunk.largest_label, get_image_index_range())

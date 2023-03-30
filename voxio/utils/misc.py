@@ -48,5 +48,9 @@ def sort_indexed_dict_keys_to_value_list(key_index_dict: dict[float, Any]) -> li
     return [v for _k, v in sorted(key_index_dict.items(), key=lambda kv: kv[0])]
 
 
+def biggest_slice_from_two(slice_a: slice, slice_b: slice) -> slice:
+    return slice(min(slice_a.start, slice_b.start), max(slice_a.stop, slice_b.stop))
+
+
 def get_image_dimensions(image_path: FilePath) -> tuple[int, int]:
     return imagesize.get(image_path)
