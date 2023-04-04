@@ -8,6 +8,8 @@ from pydantic_numpy import NumpyModel, NDArrayBool, NDArray
 from scipy import ndimage
 from scipy.ndimage import find_objects
 
+from voxio.utils.misc import biggest_ndim_slice
+
 
 def _volume_from_slices(*slices: slice) -> int:
     volume = 1
@@ -42,14 +44,10 @@ class ChunkInfo:
                 max_size = size
                 largest_label = label
         self.largest_label: int = largest_label
-        self.max_volume: int = self.label_to_volume[self.largest_label]
+        self.max_obj_volume: int = self.label_to_volume[self.largest_label]
+        self.max_obj_slice: tuple[slice, slice, slice] = self.label_to_slice[self.largest_label]
 
-        end_slices = ndimage.find_objects(labeled[-1])
-        result = defaultdict(list)
-        for object_slices in end_slices:
-            result[map_sub_slice_to_label(object_slices, -1)].append(object_slices)
-
-        self.label_to_end_slices: dict[int, list[tuple[slice, slice], ...]] = dict(result)
+        self.max_start: tuple[tuple[slice]]
 
         end_slices = ndimage.find_objects(labeled[0])
         result = defaultdict(list)
@@ -58,9 +56,33 @@ class ChunkInfo:
 
         self.label_to_start_slices: dict[int, list[tuple[slice, slice], ...]] = dict(result)
 
+        end_slices = ndimage.find_objects(labeled[-1])
+        result = defaultdict(list)
+        for object_slices in end_slices:
+            result[map_sub_slice_to_label(object_slices, -1)].append(object_slices)
+
+        self.label_to_end_slices: dict[int, list[tuple[slice, slice], ...]] = dict(result)
+
         self.cache_path = cache_directory / f"{chunk_index}.npz"
         np.savez(str(self.cache_path), labeled)
+
+        self._label_interest_to_object_slice: dict[int, tuple[slice, slice, slice]] = {}
 
     @property
     def read_labeled(self) -> np.ndarray:
         return np.load(str(self.cache_path))
+
+    @property
+    def max_zyx_slice_for_lois(self) -> list:
+        if not self._label_interest_to_object_slice:
+            return []
+
+        all_slices = list(self._label_interest_to_object_slice.values())
+        current_max = all_slices.pop()
+        for cand_slices in all_slices:
+            current_max = biggest_ndim_slice(current_max, cand_slices)
+
+        return current_max
+
+    def add_label_of_interest(self, label: int) -> None:
+        self._label_interest_to_object_slice[label] = self.label_to_slice[label]

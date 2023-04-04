@@ -48,9 +48,20 @@ def sort_indexed_dict_keys_to_value_list(key_index_dict: dict[float, Any]) -> li
     return [v for _k, v in sorted(key_index_dict.items(), key=lambda kv: kv[0])]
 
 
+def get_image_dimensions(image_path: FilePath) -> tuple[int, int]:
+    return imagesize.get(image_path)
+
+
 def biggest_slice_from_two(slice_a: slice, slice_b: slice) -> slice:
     return slice(min(slice_a.start, slice_b.start), max(slice_a.stop, slice_b.stop))
 
 
-def get_image_dimensions(image_path: FilePath) -> tuple[int, int]:
-    return imagesize.get(image_path)
+def biggest_ndim_slice(slices_a: Sequence[slice], slices_b: Sequence[slice]) -> list[slice]:
+    return [biggest_slice_from_two(sa, sb) for sa, sb in zip(slices_a, slices_b)]
+
+
+def ndim_slice_contains_other(source: Sequence[slice], other: Sequence[slice]) -> bool:
+    for source_comp, other_comp in zip(source, other):
+        if source_comp.start > other_comp.start or source_comp.stop < other_comp.stop:
+            return False
+    return True
