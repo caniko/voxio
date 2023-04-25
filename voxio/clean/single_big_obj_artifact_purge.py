@@ -1,4 +1,5 @@
 from collections import deque, defaultdict
+from copy import copy
 from logging import getLogger
 from typing import Sequence
 
@@ -18,7 +19,7 @@ from voxio.utils.io import cv2_read_any_depth, write_indexed_images_to_directory
 from voxio.utils.misc import (
     number_of_planes_loadable_to_memory,
     sort_indexed_dict_keys_to_value_list,
-    get_image_index_range, ndim_slice_contains_other, biggest_slice_from_two,
+    get_image_index_range, ndim_slice_contains_other, biggest_slice_from_two, ex_enumerate,
 )
 
 logger = getLogger(__name__)
@@ -54,16 +55,44 @@ def clear_everything_but_largest_object(image_paths: tuple[FilePath, ...], outpu
     max_volume_chunk_idx = max_volume_to_chunk_idx[max(max_volume_to_chunk_idx)]
     start_chunk = chunk_sequence[max_volume_chunk_idx]
 
+    start_chunk.add_label_of_interest_top(start_chunk.largest_label)
+    start_chunk.add_label_of_interest_bottom(start_chunk.largest_label)
     start_slice = start_chunk.label_to_slice[start_chunk.largest_label]
-
     # From start to end
-    previous_chunk = start_chunk
-    previous_top = start_slice[1:]
-    y_max, x_max = previous_top
+    previous_top_slices = [start_slice[1:]]
+    next_top_slices = []
     for chunk_idx, chunk in enumerate(chunk_sequence[max_volume_chunk_idx + 1:], start=max_volume_chunk_idx + 1):
         for label, object_slice in chunk.label_to_start_slices.items():
-            if ndim_slice_contains_other(previous_top, object_slice):
-                chunk.add_label_of_interest(label)
-        y_max, x_max = chunk.max_zyx_slice_for_lois[1:]
+            for slice_in_previous_top in previous_top_slices:
+                if ndim_slice_contains_other(slice_in_previous_top, object_slice):
+                    chunk.add_label_of_interest_bottom(label)
+                    if label in chunk.label_to_end_slices:
+                        next_top_slices.append(chunk.label_to_end_slices[label])
+        previous_top_slices = copy(next_top_slices)
+        next_top_slices = []
+
+    previous_bottom_slices = list(chunk.bottom_label_interest_to_object_slice.values())
+    next_bottom_slices = []
+    for chunk_idx, chunk in ex_enumerate(chunk_sequence[-1::-1], start=number_of_chunks-1, step=-1):
+        for label, object_slice in chunk.label_to_end_slices.items():
+            for slice_in_previous_bottom in previous_bottom_slices:
+                if ndim_slice_contains_other(slice_in_previous_bottom, object_slice):
+                    chunk.add_label_of_interest_top(label)
+                    if label in chunk.label_to_start_slices:
+                        next_bottom_slices.append(chunk.label_to_start_slices[label])
+        previous_bottom_slices = copy(next_bottom_slices)
+        next_bottom_slices = []
+
+    previous_top_slices = list(chunk.top_label_interest_to_object_slice.values())
+    next_top_slices = []
+    for chunk_idx, chunk in enumerate(chunk_sequence):
+        for label, object_slice in chunk.label_to_start_slices.items():
+            for slice_in_previous_top in previous_top_slices:
+                if ndim_slice_contains_other(slice_in_previous_top, object_slice):
+                    chunk.add_label_of_interest_bottom(label)
+                    if label in chunk.label_to_end_slices:
+                        next_top_slices.append(chunk.label_to_end_slices[label])
+        previous_top_slices = copy(next_top_slices)
+        next_top_slices = []
 
     write_indexed_images_to_directory(start_chunk.read_labeled == start_chunk.largest_label, get_image_index_range())

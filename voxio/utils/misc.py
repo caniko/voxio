@@ -1,6 +1,6 @@
 import re
 from math import floor
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Sequence, Iterable, Generator, TypeVar
 
 import imagesize
 import numpy as np
@@ -65,3 +65,12 @@ def ndim_slice_contains_other(source: Sequence[slice], other: Sequence[slice]) -
         if source_comp.start > other_comp.start or source_comp.stop < other_comp.stop:
             return False
     return True
+
+
+T = TypeVar("T")
+
+
+def ex_enumerate(iterable: Iterable[T], start: int = 0, step: int = 1) -> Generator[tuple[int, T], None, None]:
+    for x in iterable:
+        yield start, x
+        start += step

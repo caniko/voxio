@@ -66,7 +66,8 @@ class ChunkInfo:
         self.cache_path = cache_directory / f"{chunk_index}.npz"
         np.savez(str(self.cache_path), labeled)
 
-        self._label_interest_to_object_slice: dict[int, tuple[slice, slice, slice]] = {}
+        self.bottom_label_interest_to_object_slice: dict[int, tuple[slice, slice, slice]] = {}
+        self.top_label_interest_to_object_slice: dict[int, tuple[slice, slice, slice]] = {}
 
     @property
     def read_labeled(self) -> np.ndarray:
@@ -84,5 +85,19 @@ class ChunkInfo:
 
         return current_max
 
-    def add_label_of_interest(self, label: int) -> None:
-        self._label_interest_to_object_slice[label] = self.label_to_slice[label]
+    @property
+    def label_of_interest_to_object_slice(self) -> dict:
+        return {**self._bottom_label_interest_to_object_slice, **self._top_label_interest_to_object_slice}
+
+    def add_label_of_interest_bottom(self, label: int) -> None:
+        self.bottom_label_interest_to_object_slice[label] = self.label_to_slice[label]
+
+    def add_label_of_interest_top(self, label: int) -> None:
+        self.top_label_interest_to_object_slice[label] = self.label_to_slice[label]
+
+    def with_labels_of_interest(self):
+        labeled = self.read_labeled
+        result = np.zeros_like(labeled, dtype=np.uint8)
+        for label in self.label_of_interest_to_object_slice:
+            result[labeled == labeled] = 1
+        return result
