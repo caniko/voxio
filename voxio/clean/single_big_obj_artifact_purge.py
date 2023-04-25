@@ -1,6 +1,8 @@
 from collections import deque, defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from logging import getLogger
+from statistics import mean
 from typing import Sequence
 
 import compress_pickle
@@ -15,11 +17,14 @@ from scipy.ndimage import find_objects
 from voxio.auxiliary.caching import CachingInfo
 from voxio.auxiliary.chunk_info import ChunkInfo
 from voxio.read import chunk_read_stack_images
-from voxio.utils.io import cv2_read_any_depth, write_indexed_images_to_directory
+from voxio.utils.io import cv2_read_any_depth, write_indexed_images_to_directory_with_executor
 from voxio.utils.misc import (
     number_of_planes_loadable_to_memory,
     sort_indexed_dict_keys_to_value_list,
-    get_image_index_range, ndim_slice_contains_other, biggest_slice_from_two, ex_enumerate,
+    get_image_index_range,
+    ndim_slice_contains_other,
+    biggest_slice_from_two,
+    ex_enumerate,
 )
 
 logger = getLogger(__name__)
@@ -51,6 +56,7 @@ def clear_everything_but_largest_object(image_paths: tuple[FilePath, ...], outpu
 
     chunk_sequence = sort_indexed_dict_keys_to_value_list(chunk_idx_to_chunk)
     number_of_chunks = len(chunk_sequence)
+    mean_chunk_depth = mean((chunk.z_depth for chunk in chunk_sequence))
 
     max_volume_chunk_idx = max_volume_to_chunk_idx[max(max_volume_to_chunk_idx)]
     start_chunk = chunk_sequence[max_volume_chunk_idx]
@@ -58,10 +64,18 @@ def clear_everything_but_largest_object(image_paths: tuple[FilePath, ...], outpu
     start_chunk.add_label_of_interest_top(start_chunk.largest_label)
     start_chunk.add_label_of_interest_bottom(start_chunk.largest_label)
     start_slice = start_chunk.label_to_slice[start_chunk.largest_label]
-    # From start to end
+
+    """
+    We need to find the object across the chunks. We go from the chunk with largest object to the top, A.
+    After reaching the top we need to retrace our steps to make sure the connections to the edges
+    that weren't included in the first pass (A) are added, B. We do the same by going from the bottom, and
+    back to where we started in A.
+    """
+
+    # A: From the slice with the largest object in all the chunks to the top
     previous_top_slices = [start_slice[1:]]
     next_top_slices = []
-    for chunk_idx, chunk in enumerate(chunk_sequence[max_volume_chunk_idx + 1:], start=max_volume_chunk_idx + 1):
+    for chunk_idx, chunk in enumerate(chunk_sequence[max_volume_chunk_idx + 1 :], start=max_volume_chunk_idx + 1):
         for label, object_slice in chunk.label_to_start_slices.items():
             for slice_in_previous_top in previous_top_slices:
                 if ndim_slice_contains_other(slice_in_previous_top, object_slice):
@@ -71,9 +85,10 @@ def clear_everything_but_largest_object(image_paths: tuple[FilePath, ...], outpu
         previous_top_slices = copy(next_top_slices)
         next_top_slices = []
 
+    # B: From the top to the bottom
     previous_bottom_slices = list(chunk.bottom_label_interest_to_object_slice.values())
     next_bottom_slices = []
-    for chunk_idx, chunk in ex_enumerate(chunk_sequence[-1::-1], start=number_of_chunks-1, step=-1):
+    for chunk_idx, chunk in ex_enumerate(chunk_sequence[-1::-1], start=number_of_chunks - 1, step=-1):
         for label, object_slice in chunk.label_to_end_slices.items():
             for slice_in_previous_bottom in previous_bottom_slices:
                 if ndim_slice_contains_other(slice_in_previous_bottom, object_slice):
@@ -83,16 +98,25 @@ def clear_everything_but_largest_object(image_paths: tuple[FilePath, ...], outpu
         previous_bottom_slices = copy(next_bottom_slices)
         next_bottom_slices = []
 
+    # C: From the bottom to where we started in A
     previous_top_slices = list(chunk.top_label_interest_to_object_slice.values())
-    next_top_slices = []
     for chunk_idx, chunk in enumerate(chunk_sequence):
         for label, object_slice in chunk.label_to_start_slices.items():
             for slice_in_previous_top in previous_top_slices:
                 if ndim_slice_contains_other(slice_in_previous_top, object_slice):
                     chunk.add_label_of_interest_bottom(label)
-                    if label in chunk.label_to_end_slices:
-                        next_top_slices.append(chunk.label_to_end_slices[label])
-        previous_top_slices = copy(next_top_slices)
-        next_top_slices = []
 
-    write_indexed_images_to_directory(start_chunk.read_labeled == start_chunk.largest_label, get_image_index_range())
+    # Unpack each chunk to compressed 1-bit images
+
+    current_z_depth = 0
+    with ThreadPoolExecutor(max_workers=round(mean_chunk_depth * 1.5)) as executor:
+        for chunk in chunk_sequence:
+            top_index = current_z_depth + chunk.z_depth
+            write_indexed_images_to_directory_with_executor(
+                executor=executor,
+                images=chunk.labeled_without_background_labels,
+                index_iterator=iter(range(current_z_depth, top_index)),
+                one_bit_image=True,
+                output_directory=output_directory
+            )
+            current_z_depth = top_index

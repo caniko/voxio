@@ -30,6 +30,7 @@ class ChunkInfo:
 
         labeled, num_features = ndimage.label(image)
 
+        self.z_depth: int = len(labeled)
         self.chunk_index: int = chunk_index
         self.label_to_slice: dict[int, tuple[slice, slice, slice]] = {
             label: slices for label, slices in zip(range(1, num_features + 1), find_objects(labeled))
@@ -74,6 +75,16 @@ class ChunkInfo:
         return np.load(str(self.cache_path))
 
     @property
+    def labeled_without_background_labels(self):
+        assert self.label_of_interest_to_object_slice
+
+        labeled = self.read_labeled
+        result = np.zeros_like(labeled, dtype=np.uint8)
+        for label in self.label_of_interest_to_object_slice:
+            result[labeled == label] = 1
+        return result
+
+    @property
     def max_zyx_slice_for_lois(self) -> list:
         if not self._label_interest_to_object_slice:
             return []
@@ -94,10 +105,3 @@ class ChunkInfo:
 
     def add_label_of_interest_top(self, label: int) -> None:
         self.top_label_interest_to_object_slice[label] = self.label_to_slice[label]
-
-    def with_labels_of_interest(self):
-        labeled = self.read_labeled
-        result = np.zeros_like(labeled, dtype=np.uint8)
-        for label in self.label_of_interest_to_object_slice:
-            result[labeled == labeled] = 1
-        return result

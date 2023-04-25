@@ -1,6 +1,6 @@
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, Executor
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
 
 import cv2
 import numpy as np
@@ -40,3 +40,18 @@ def write_indexed_images_to_directory(
                 image_plane,
                 output_directory / f"{next(index_iterator)}.png",
             )
+
+
+def write_indexed_images_to_directory_with_executor(
+    executor: Executor,
+    images: Iterable[NDArray],
+    index_iterator: Iterable[int],
+    output_directory: DirectoryPath,
+    one_bit_image: bool = False,
+) -> None:
+    for idx, image_plane in zip(index_iterator, images):
+        executor.submit(
+            one_bit_save if one_bit_image else compressed_png_save,
+            image_plane,
+            output_directory / f"{idx}.png",
+        )
