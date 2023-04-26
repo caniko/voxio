@@ -1,18 +1,11 @@
-from collections import deque, defaultdict
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from logging import getLogger
 from statistics import mean
-from typing import Sequence
 
-import compress_pickle
 import imagesize
-import numpy as np
-from numba import njit
 from pydantic import DirectoryPath, FilePath, validate_arguments
-from pydantic_numpy import NumpyModel, NDArrayBool
-from scipy import ndimage
-from scipy.ndimage import find_objects
 
 from voxio.auxiliary.caching import CachingInfo
 from voxio.auxiliary.chunk_info import ChunkInfo
@@ -21,9 +14,7 @@ from voxio.utils.io import cv2_read_any_depth, write_indexed_images_to_directory
 from voxio.utils.misc import (
     number_of_planes_loadable_to_memory,
     sort_indexed_dict_keys_to_value_list,
-    get_image_index_range,
     ndim_slice_contains_other,
-    biggest_slice_from_two,
     ex_enumerate,
 )
 

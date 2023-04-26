@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, Executor
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Iterable
 
 import cv2
 import numpy as np

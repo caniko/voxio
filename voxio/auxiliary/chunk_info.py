@@ -1,10 +1,7 @@
 from collections import defaultdict
-from functools import cached_property
 
 import numpy as np
-import scipy.ndimage
 from pydantic import DirectoryPath
-from pydantic_numpy import NumpyModel, NDArrayBool, NDArray
 from scipy import ndimage
 from scipy.ndimage import find_objects
 
