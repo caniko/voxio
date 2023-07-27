@@ -3,7 +3,7 @@ from logging import getLogger
 
 import imagesize
 import numpy as np
-from pydantic import DirectoryPath, FilePath, validate_arguments
+from pydantic import DirectoryPath, FilePath, validate_call
 from scipy import ndimage
 from scipy.ndimage import find_objects
 
@@ -31,7 +31,7 @@ def _read_and_purge_small_artifacts(image_path: FilePath) -> np.ndarray[bool, bo
     return labeled == size_to_label[max(size_to_label)]
 
 
-@validate_arguments
+@validate_call
 def clear_everything_but_largest_object(image_paths: tuple[FilePath, ...], output_directory: DirectoryPath) -> None:
     counter = count()
     for cleaned_image_stack in chunk_read_stack_images(

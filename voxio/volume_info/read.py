@@ -9,7 +9,7 @@ import numpy as np
 import psutil
 from imagesize import imagesize
 from pydantic import FilePath
-from pydantic_numpy import NDArray
+from pydantic_numpy import NpNDArray
 from scipy.ndimage import find_objects
 
 from voxio.read import cv2_read_any_depth, parallel_scan_stack_images
@@ -17,7 +17,7 @@ from voxio.utils.distance import image_feature_distance
 from voxio.utils.misc import sort_indexed_dict_keys_to_value_list
 from voxio.volume_info.volume_info import VolumeInfo
 
-IndexAndImage = tuple[int, NDArray]
+IndexAndImage = tuple[int, NpNDArray]
 
 logger = logging.getLogger(__file__)
 

@@ -15,7 +15,7 @@ logger = logging.getLogger(__file__)
 
 class VolumeInfo(BaseModel):
     plane_dimension: tuple[int, int]
-    unit_id_to_size_stack_sequence: list[dict[int, int], ...]
+    unit_id_to_size_stack_sequence: list[dict[int, int]]
     unit_pair_to_min_distance: dict[frozenset[int], float] = Field(default_factory=dict)
     unit_id_to_yx_slices: dict[int, list[slice, slice]] = Field(default_factory=dict)
 
@@ -118,11 +118,11 @@ class VolumeInfo(BaseModel):
         return number_of_planes_loadable_to_memory(self.plane_dimension)
 
     @property
-    def unit_id_stack_sequence(self) -> list[set[int], ...]:
+    def unit_id_stack_sequence(self) -> list[set[int],]:
         return [set(stack_dict.keys()) for stack_dict in self.unit_id_to_size_stack_sequence]
 
     @cached_property
-    def unit_id_to_stack_locations(self) -> dict[int, list[int, ...]]:
+    def unit_id_to_stack_locations(self) -> dict[int, list[int,]]:
         result = defaultdict(list)
         for plane_index, unit_id_to_size_on_plane in enumerate(self.unit_id_to_size_stack_sequence):
             for unit_id in unit_id_to_size_on_plane:
@@ -138,7 +138,7 @@ class VolumeInfo(BaseModel):
         return dict(sorted(result.items(), key=lambda kv: kv[1], reverse=True))
 
     @cached_property
-    def unit_id_to_gaps(self) -> dict[int, list[int, ...]]:
+    def unit_id_to_gaps(self) -> dict[int, list[int,]]:
         result = {}
         for unit_id, locations in self.unit_id_to_stack_locations.items():
             if gaps := set(range(locations[0], locations[-1] + 1)).difference(locations):

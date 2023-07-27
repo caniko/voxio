@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Callable, Generator, Iterable, Sequence
 
 import numpy as np
-from pydantic import DirectoryPath, FilePath, validate_arguments
+from pydantic import DirectoryPath, FilePath, validate_call
 
 from voxio.utils.io import cv2_read_any_depth
 from voxio.utils.misc import break_into_chunks, get_number_indexed_image_paths
@@ -14,7 +14,7 @@ logger = getLogger(__name__)
 
 def read_stack_images(
     image_paths: Sequence[FilePath],
-    image_reader: Callable[[Path | str], np.ndarray],
+    image_reader: Callable[[Path], np.ndarray],
     parallel: bool = True,
 ) -> np.ndarray:
     return (
@@ -28,7 +28,7 @@ def simple_read_images(image_paths: Sequence[FilePath], parallel: bool = True) -
     return read_stack_images(image_paths, cv2_read_any_depth, parallel)
 
 
-@validate_arguments
+@validate_call
 def simple_find_read_images(image_directory: DirectoryPath, *finder_args, parallel: bool = True) -> np.ndarray:
     return read_stack_images(
         get_number_indexed_image_paths(image_directory, *finder_args), cv2_read_any_depth, parallel
@@ -38,7 +38,7 @@ def simple_find_read_images(image_directory: DirectoryPath, *finder_args, parall
 def chunk_read_stack_images(
     image_paths: Sequence[FilePath],
     chunk_size: int,
-    image_reader: Callable[[Path | str], np.ndarray],
+    image_reader: Callable[[Path], np.ndarray],
     offset: int = 0,
     parallel: bool = True,
 ) -> Generator[np.ndarray, None, None]:

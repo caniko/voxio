@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "voxio"
-version = "0.1.2"
+version = "1.0.0"
 description = "Library for ingesting and processing voxel (3D imaging) data"
 authors = ["caniko <canhtart@gmail.com>"]
 license = "BSD-4"
 repository = "https://github.com/caniko/voxio"
 readme = "README.md"
 
-keywords = ["3D", "voxel", "processing", "fix", "mesh"]
+keywords = ["voxel", "processing", "fix", "mesh"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -21,14 +21,14 @@ classifiers = [
 voxio = "voxio.cli:voxio_cli"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.11"
-pydantic = "^1.10.6"
+python = ">=3.10,<3.11"
+pydantic = "^2.0"
 psutil = "^5.9.4"
 
 # Maintained by project author
-pydantic-numpy = ">=2.0"
+pydantic-numpy = ">=3.0"
 
-numpy = ">=1.17"
+numpy = ">=1.23"
 scipy = "*"
 scikit-image = "^0.20.0"
 itk-morphologicalcontourinterpolation = "^1.1.0"

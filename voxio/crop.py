@@ -1,10 +1,10 @@
 import numpy as np
-from pydantic_numpy import NDArray
+from pydantic_numpy import NpNDArray
 
 
 def crop_3d_image_to_content(
-    image: NDArray, z_should_be_on_edges: bool = False
-) -> tuple[NDArray, tuple[int, int, int]]:
+    image: NpNDArray, z_should_be_on_edges: bool = False
+) -> tuple[NpNDArray, tuple[int, int, int]]:
     # Find the boundary of the object array, and crop the array accordingly
     zyx_defined_idxs = np.where(image)
     z_offset, y_offset, x_offset = np.min(zyx_defined_idxs, axis=1)

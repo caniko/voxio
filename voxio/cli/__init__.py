@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 import click
-from pydantic import DirectoryPath, FilePath, validate_arguments
+from pydantic import DirectoryPath, FilePath, validate_call
 
-from voxio.augment.label_binary_image import label_binary_image
+from voxio.workflows.label_binary_image import label_binary_image
 from voxio.cli.settings import settings
 
 global_options = click.option("-i", "--input-dir", type=Path, help="The directory storing the images")(
@@ -43,7 +43,7 @@ def voxio_cli():
 
 @voxio_cli.command
 @global_options
-@validate_arguments
+@validate_call
 def label_binary(image_dir: DirectoryPath, output_dir: Path, index_regex: str, image_format: Optional[str]) -> None:
     _output_dir_workflow(output_dir)
     label_binary_image(

@@ -5,7 +5,7 @@ from typing import Optional
 
 import numpy as np
 import psutil
-from pydantic_numpy import NDArray
+from pydantic_numpy import NpNDArray
 from scipy.spatial.distance import cdist
 from skimage.segmentation import find_boundaries
 
@@ -13,7 +13,7 @@ logger = getLogger(__name__)
 
 
 def image_feature_distance(
-    labeled_array: NDArray, memory_headroom: Optional[float] = None
+    labeled_array: NpNDArray, memory_headroom: Optional[float] = None
 ) -> dict[frozenset[int], float]:
     """
     Takes a labeled array as returned by scipy.ndimage.label and

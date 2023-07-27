@@ -7,7 +7,7 @@ from tests import IMAGE_6_STACK, SIX_STACK_DIR
 from voxio.utils.io import one_bit_save
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def labeled_6_stack():
     SIX_STACK_DIR.mkdir(parents=True, exist_ok=True)
 
