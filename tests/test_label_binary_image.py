@@ -1,10 +1,9 @@
-
 import numpy as np
 
 from tests import SIX_STACK_DIR
 from tests.utils import read_in_chunks_of_two
-from voxio.workflows.label_binary_image import StateOfLabel, main_label_binary_image
 from voxio.read import simple_find_read_images
+from voxio.workflows.label_binary_image import StateOfLabel, main_label_binary_image
 
 
 def test_label_binary_image(tmp_path, labeled_6_stack):
