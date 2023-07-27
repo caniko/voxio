@@ -1,6 +1,7 @@
+import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
 
 import cv2
 import numpy as np
@@ -41,3 +42,15 @@ def write_indexed_images_to_directory(
                 image_plane,
                 output_directory / f"{next(index_iterator)}.png",
             )
+
+
+def find_and_sort_images(
+    image_dir: DirectoryPath, index_regex: str = r"\d+", image_format: Optional[str] = None
+) -> Iterable[FilePath]:
+    image_file_pattern = "*"
+    if image_format:
+        image_file_pattern += image_format
+
+    index_finder = re.compile(index_regex)
+
+    return sorted(Path(image_dir).glob(image_file_pattern), key=lambda n: int(index_finder.findall(n.stem)[0]))
