@@ -923,13 +923,13 @@ typing-extensions = ">=4.6.0,<4.7.0 || >4.7.0"
 
 [[package]]
 name = "pydantic-numpy"
-version = "3.1.1"
+version = "3.1.2"
 description = "Pydantic Model integration of the NumPy array"
 optional = false
 python-versions = ">=3.9,<3.12"
 files = [
-    {file = "pydantic_numpy-3.1.1-py3-none-any.whl", hash = "sha256:1877f2dc9d768fc0541c76d70d4e38b8c75e5b2934e8d36dde906c320d500299"},
-    {file = "pydantic_numpy-3.1.1.tar.gz", hash = "sha256:c21e88095d72b44e136512b098f087e890cc1a0ba4f74d5a3917d83e01d16594"},
+    {file = "pydantic_numpy-3.1.2-py3-none-any.whl", hash = "sha256:595403dcf85ed994d2778749ae5d1fe758fd1e74164e233d1aac1721e8aa15f5"},
+    {file = "pydantic_numpy-3.1.2.tar.gz", hash = "sha256:11e90ee4368dc01b3c92426133506e4ab46f505854ffaff353946ec5eb1c902a"},
 ]
 
 [package.dependencies]
