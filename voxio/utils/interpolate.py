@@ -3,7 +3,7 @@ from functools import lru_cache
 import itk
 import numpy as np
 from numpy import ScalarType
-from pydantic_numpy import NDArray
+from pydantic_numpy import NpNDArray
 
 from voxio.utils.typings import TupleSlice
 
@@ -18,11 +18,11 @@ def compute_new_z_resolution(number_of_planes: int, spacing: int) -> int:
 
 
 @lru_cache
-def generate_spacing_array(yx_shape: TupleSlice, spacing: int, data_type: ScalarType) -> NDArray:
+def generate_spacing_array(yx_shape: TupleSlice, spacing: int, data_type: ScalarType) -> NpNDArray:
     return np.zeros((spacing, *yx_shape), dtype=data_type)
 
 
-def add_inter_spacing(stack: NDArray, spacing_array: NDArray) -> NDArray:
+def add_inter_spacing(stack: NpNDArray, spacing_array: NpNDArray) -> NpNDArray:
     spaced_stack = []
     for plane in stack:
         spaced_stack.append(np.expand_dims(plane, axis=0))
@@ -32,8 +32,8 @@ def add_inter_spacing(stack: NDArray, spacing_array: NDArray) -> NDArray:
 
 
 def morphological_interpolation_max_resolution_spacing(
-    labeled_stack: NDArray, ceiled_inter_stack_voxel_distance: int
-) -> NDArray:
+    labeled_stack: NpNDArray, ceiled_inter_stack_voxel_distance: int
+) -> NpNDArray:
     return interpolate_spaced_array(
         add_inter_spacing(
             labeled_stack,
@@ -46,5 +46,5 @@ def morphological_interpolation_max_resolution_spacing(
     )
 
 
-def interpolate_spaced_array(spaced_array: NDArray) -> NDArray:
+def interpolate_spaced_array(spaced_array: NpNDArray) -> NpNDArray:
     return itk.GetArrayFromImage(itk.morphological_contour_interpolator(itk.GetImageFromArray(spaced_array)))

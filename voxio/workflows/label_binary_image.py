@@ -7,8 +7,8 @@ from typing import Generator, Iterable
 import compress_pickle
 import numpy as np
 from numpy import ScalarType
-from pydantic import BaseModel, DirectoryPath, Field, FilePath, validate_arguments
-from pydantic_numpy import NDArray
+from pydantic import BaseModel, DirectoryPath, Field, FilePath, validate_call
+from pydantic_numpy import NpNDArray
 from scipy import ndimage
 from yaspin import yaspin
 
@@ -22,10 +22,11 @@ defaultdict_set = partial(defaultdict, set)
 
 class StateOfLabel(BaseModel):
     chunk_size: int
-    volume_index: int | None
+    volume_index: int | None = None
+
     bad_object_locations: list[tuple[int, int, int]] = Field(default_factory=list)
 
-    chunk_depths: list[int, ...] = Field(default_factory=list)
+    chunk_depths: list[int] = Field(default_factory=list)
     object_id_to_locs: dict[int, set[int]] = Field(default_factory=defaultdict_set)
 
     volume_index_to_must_map_later: dict[int, set[tuple[int, int]]] = Field(
@@ -44,7 +45,7 @@ class StateOfLabel(BaseModel):
         return iter(range(start, start + self.chunk_depths[volume_index]))
 
 
-def remove_objects_that_contain_other_objects_from_labeled(labeled: NDArray) -> tuple[NDArray, NDArray]:
+def remove_objects_that_contain_other_objects_from_labeled(labeled: NpNDArray) -> tuple[NpNDArray, NpNDArray]:
     """
     Caused by improper annotation. In VAST, most likely because of
     annotating at a high mip-level, which leads to gaps in the lower mips,
@@ -68,7 +69,7 @@ def remove_objects_that_contain_other_objects_from_labeled(labeled: NDArray) -> 
     return ndimage.label(labeled)[0], np.array(bad_object_locations)
 
 
-@validate_arguments
+@validate_call
 def label_binary_image(
     image_paths: tuple[FilePath, ...],
     output_directory: DirectoryPath,

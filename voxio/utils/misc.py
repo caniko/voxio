@@ -5,10 +5,10 @@ from typing import Any, Callable, Sequence
 import imagesize
 import numpy as np
 import psutil
-from pydantic import DirectoryPath, FilePath, validate_arguments
+from pydantic import DirectoryPath, FilePath, validate_call
 
 
-@validate_arguments
+@validate_call
 def get_image_paths(image_directory: DirectoryPath, image_format: str, sorting_key: Callable) -> tuple[FilePath, ...]:
     assert image_directory.is_dir()
 
@@ -21,14 +21,14 @@ def get_number_indexed_image_paths(image_directory: DirectoryPath, image_format:
     return tuple(sorted(image_directory.glob(f"*.{image_format}"), key=lambda p: finder.findall(p.stem)[0]))
 
 
-@validate_arguments
+@validate_call
 def number_of_planes_loadable_to_memory(
     plane_shape: Sequence[int], memory_tolerance: float = 1.0, byte_mul: int = 1
 ) -> int:
     return floor(psutil.virtual_memory().available * memory_tolerance / (np.multiply.reduce(plane_shape) * byte_mul))
 
 
-def break_into_chunks(source: Sequence, chunk_size: int) -> list[Sequence, ...]:
+def break_into_chunks(source: Sequence, chunk_size: int) -> list[Sequence,]:
     chunks = []
     start, stop = 0, chunk_size
     while stop < len(source):
